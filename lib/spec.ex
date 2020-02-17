@@ -1,0 +1,2 @@
+defmodule Spec do
+end
