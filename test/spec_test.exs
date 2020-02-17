@@ -27,5 +27,15 @@ defmodule SpecTest do
         Spec.conform!(6, spec)
       end
     end
+
+    test "all_of" do
+      spec = Spec.all_of([1..5, 5..10])
+
+      assert Spec.conform!(5, spec) == 5
+
+      assert_raise Spec.Error, "cannot conform `6` to `#{inspect(spec)}`", fn ->
+        Spec.conform!(6, spec)
+      end
+    end
   end
 end
