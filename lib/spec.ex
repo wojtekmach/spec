@@ -38,3 +38,13 @@ defimpl Spec.Spec, for: Function do
     end
   end
 end
+
+defimpl Spec.Spec, for: Range do
+  def conform(spec, value) do
+    if value in spec do
+      {:ok, value}
+    else
+      {:error, %Spec.Error{spec: spec, value: value}}
+    end
+  end
+end
