@@ -12,6 +12,14 @@ defmodule Spec do
         raise exception
     end
   end
+
+  defmodule AnyOf do
+    defstruct [:specs]
+  end
+
+  def any_of(specs) do
+    %AnyOf{specs: specs}
+  end
 end
 
 defprotocol Spec.Spec do
@@ -46,5 +54,19 @@ defimpl Spec.Spec, for: Range do
     else
       {:error, %Spec.Error{spec: spec, value: value}}
     end
+  end
+end
+
+defimpl Spec.Spec, for: Spec.AnyOf do
+  def conform(%{specs: specs} = any_of, value) do
+    Enum.reduce_while(specs, {:ok, value}, fn spec, _ ->
+      case Spec.Spec.conform(spec, value) do
+        {:ok, value} ->
+          {:halt, {:ok, value}}
+
+        {:error, _} ->
+          {:cont, {:error, %Spec.Error{spec: any_of, value: value}}}
+      end
+    end)
   end
 end
