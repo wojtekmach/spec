@@ -28,6 +28,10 @@ defmodule Spec do
   def all_of(specs) do
     %AllOf{specs: specs}
   end
+
+  def compatibility(spec1, spec2) do
+    Spec.Compatibility.compatibility(spec1, spec2)
+  end
 end
 
 defprotocol Spec.Spec do
@@ -88,6 +92,56 @@ defimpl Spec.Spec, for: Spec.AllOf do
 
         {:error, _} ->
           {:halt, {:error, %Spec.Error{spec: all_of, value: value}}}
+      end
+    end)
+  end
+end
+
+defmodule Spec.Compatibility do
+  @moduledoc false
+
+  def compatibility(spec, spec) do
+    :equal
+  end
+
+  def compatibility(l1..r1, l2..r2) do
+    cond do
+      l2 >= l1 and r2 <= r1 -> :stricter
+      l2 <= l1 and r2 >= r1 -> :looser
+      true -> :incompatible
+    end
+  end
+
+  def compatibility(%Range{}, fun) when is_function(fun, 1) do
+    if fun == &is_integer/1 do
+      :looser
+    else
+      :incompatible
+    end
+  end
+
+  def compatibility(fun, %Range{}) when is_function(fun, 1) do
+    if fun == &is_integer/1 do
+      :stricter
+    else
+      :incompatible
+    end
+  end
+
+  def compatibility(%Range{} = range, %Spec.AnyOf{specs: specs}) do
+    Enum.reduce_while(specs, :incompatible, fn spec, acc ->
+      case compatibility(range, spec) do
+        :looser ->
+          {:halt, :looser}
+
+        :stricter ->
+          {:cont, :stricter}
+
+        :equal ->
+          {:cont, :equal}
+
+        :incompatible ->
+          {:cont, acc}
       end
     end)
   end

@@ -38,4 +38,28 @@ defmodule SpecTest do
       end
     end
   end
+
+  describe "compatibility/2" do
+    test "ranges" do
+      assert Spec.compatibility(1..10, 1..10) == :equal
+      assert Spec.compatibility(1..10, 2..5) == :stricter
+      assert Spec.compatibility(1..10, 1..20) == :looser
+      assert Spec.compatibility(1..10, -10..10) == :looser
+      assert Spec.compatibility(1..10, -10..5) == :incompatible
+    end
+
+    test "ranges and is_integer" do
+      assert Spec.compatibility(1..10, &is_integer/1) == :looser
+      assert Spec.compatibility(&is_integer/1, 1..10) == :stricter
+    end
+
+    test "ranges and any_of" do
+      assert Spec.compatibility(1..10, Spec.any_of([1..5, 1..10])) == :equal
+      assert Spec.compatibility(1..10, Spec.any_of([1..5, 5..10])) == :stricter
+      assert Spec.compatibility(1..10, Spec.any_of([1..5, 1..20])) == :looser
+      assert Spec.compatibility(1..10, Spec.any_of([11..20])) == :incompatible
+      assert Spec.compatibility(1..10, Spec.any_of([11..20, &is_integer/1])) == :looser
+      assert Spec.compatibility(1..10, Spec.any_of([&is_binary/1])) == :incompatible
+    end
+  end
 end
