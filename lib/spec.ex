@@ -5,11 +5,8 @@ defmodule Spec do
 
   def conform!(value, spec) do
     case conform(value, spec) do
-      {:ok, value} ->
-        value
-
-      {:error, exception} ->
-        raise exception
+      {:ok, value} -> value
+      {:error, exception} -> raise exception
     end
   end
 
@@ -50,11 +47,8 @@ end
 defimpl Spec.Spec, for: Function do
   def conform(spec, value) when is_function(spec, 1) do
     case spec.(value) do
-      true ->
-        {:ok, value}
-
-      false ->
-        {:error, %Spec.Error{spec: spec, value: value}}
+      true -> {:ok, value}
+      false -> {:error, %Spec.Error{spec: spec, value: value}}
     end
   end
 end
@@ -73,11 +67,8 @@ defimpl Spec.Spec, for: Spec.AnyOf do
   def conform(%{specs: specs} = any_of, value) do
     Enum.reduce_while(specs, {:ok, value}, fn spec, _ ->
       case Spec.Spec.conform(spec, value) do
-        {:ok, value} ->
-          {:halt, {:ok, value}}
-
-        {:error, _} ->
-          {:cont, {:error, %Spec.Error{spec: any_of, value: value}}}
+        {:ok, value} -> {:halt, {:ok, value}}
+        {:error, _} -> {:cont, {:error, %Spec.Error{spec: any_of, value: value}}}
       end
     end)
   end
@@ -87,11 +78,8 @@ defimpl Spec.Spec, for: Spec.AllOf do
   def conform(%{specs: specs} = all_of, value) do
     Enum.reduce_while(specs, {:ok, value}, fn spec, _ ->
       case Spec.Spec.conform(spec, value) do
-        {:ok, value} ->
-          {:cont, {:ok, value}}
-
-        {:error, _} ->
-          {:halt, {:error, %Spec.Error{spec: all_of, value: value}}}
+        {:ok, value} -> {:cont, {:ok, value}}
+        {:error, _} -> {:halt, {:error, %Spec.Error{spec: all_of, value: value}}}
       end
     end)
   end
@@ -131,17 +119,10 @@ defmodule Spec.Compatibility do
   def compatibility(%Range{} = range, %Spec.AnyOf{specs: specs}) do
     Enum.reduce_while(specs, :incompatible, fn spec, acc ->
       case compatibility(range, spec) do
-        :looser ->
-          {:halt, :looser}
-
-        :stricter ->
-          {:cont, :stricter}
-
-        :equal ->
-          {:cont, :equal}
-
-        :incompatible ->
-          {:cont, acc}
+        :looser -> {:halt, :looser}
+        :stricter -> {:cont, :stricter}
+        :equal -> {:cont, :equal}
+        :incompatible -> {:cont, acc}
       end
     end)
   end
