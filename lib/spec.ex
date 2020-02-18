@@ -29,6 +29,10 @@ defmodule Spec do
   def compatibility(spec1, spec2) do
     Spec.Compatibility.compatibility(spec1, spec2)
   end
+
+  def gen(spec) do
+    Spec.Gen.gen(spec)
+  end
 end
 
 defprotocol Spec.Spec do
@@ -125,6 +129,36 @@ defmodule Spec.Compatibility do
         :incompatible -> {:cont, acc}
       end
     end)
+  end
+end
+
+defprotocol Spec.Gen do
+  def gen(spec)
+end
+
+defimpl Spec.Gen, for: Function do
+  def gen(spec) when is_function(spec, 1) do
+    cond do
+      spec == &is_integer/1 ->
+        StreamData.integer()
+
+      true ->
+        StreamData.term() |> StreamData.filter(spec)
+    end
+  end
+end
+
+defimpl Spec.Gen, for: Range do
+  def gen(spec) do
+    StreamData.integer(spec)
+  end
+end
+
+defimpl Spec.Gen, for: Spec.AnyOf do
+  def gen(%{specs: specs}) do
+    specs
+    |> Enum.map(&Spec.Gen.gen(&1))
+    |> StreamData.one_of()
   end
 end
 

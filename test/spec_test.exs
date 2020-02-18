@@ -62,6 +62,29 @@ defmodule SpecTest do
       assert Spec.compatibility(1..10, Spec.any_of([&is_binary/1])) == :incompatible
     end
   end
+
+  describe "gen/1" do
+    test "is_integer" do
+      spec = &is_integer/1
+      list = Spec.gen(spec) |> Enum.take(5)
+      assert length(list) == 5
+      Enum.each(list, &Spec.conform!(&1, spec))
+    end
+
+    test "range" do
+      spec = 1..5
+      list = Spec.gen(spec) |> Enum.take(5)
+      assert length(list) == 5
+      Enum.each(list, &Spec.conform!(&1, spec))
+    end
+
+    test "any_of" do
+      spec = Spec.any_of([1..5, 10..20])
+      list = Spec.gen(spec) |> Enum.take(5)
+      assert length(list) == 5
+      Enum.each(list, &Spec.conform!(&1, spec))
+    end
+  end
 end
 
 defmodule Spec.ContractTest do
