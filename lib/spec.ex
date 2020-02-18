@@ -152,4 +152,28 @@ defmodule Spec.Contract do
       end
     end)
   end
+
+  def compatible?(%__MODULE__{} = contract1, %__MODULE__{} = contract2) do
+    compatible_args?(contract1.args, contract2.args) and compatible_result?(contract1.result, contract2.result)
+  end
+
+  defp compatible_args?(args1, args2) when length(args1) == length(args2) do
+    Enum.reduce_while(Enum.zip(args1, args2), true, fn {arg1, arg2}, _ ->
+      case Spec.compatibility(arg1, arg2) do
+        :equal -> {:cont, true}
+        :looser -> {:cont, true}
+        _ -> {:halt, false}
+      end
+    end)
+  end
+
+  defp compatible_args?(_, _), do: false
+
+  defp compatible_result?(result1, result2) do
+    case Spec.compatibility(result1, result2) do
+      :equal -> true
+      :stricter -> true
+      _ -> false
+    end
+  end
 end

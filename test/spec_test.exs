@@ -77,4 +77,35 @@ defmodule Spec.ContractTest do
     contract = %Spec.Contract{args: [0..255, 0..255, 0..255], result: &is_binary/1}
     assert Spec.Contract.conform!({__MODULE__, :rgb2hex, [1, 2, 255]}, contract) == "#0102FF"
   end
+
+  describe "compatiblity/2" do
+    test "same contract is compatible" do
+      contract = %Spec.Contract{args: [0..255], result: &is_binary/1}
+      assert Spec.Contract.compatible?(contract, contract)
+    end
+
+    test "looser args are compatible" do
+      contract1 = %Spec.Contract{args: [0..255], result: &is_binary/1}
+      contract2 = %Spec.Contract{args: [&is_integer/1], result: &is_binary/1}
+      assert Spec.Contract.compatible?(contract1, contract2)
+    end
+
+    test "stricter args are incompatible" do
+      contract1 = %Spec.Contract{args: [&is_integer/1], result: &is_binary/1}
+      contract2 = %Spec.Contract{args: [0..255], result: &is_binary/1}
+      refute Spec.Contract.compatible?(contract1, contract2)
+    end
+
+    test "looser result is incompatible" do
+      contract1 = %Spec.Contract{args: [&is_integer/1], result: 0..255}
+      contract2 = %Spec.Contract{args: [&is_integer/1], result: &is_integer/1}
+      refute Spec.Contract.compatible?(contract1, contract2)
+    end
+
+    test "stricter result is compatible" do
+      contract1 = %Spec.Contract{args: [&is_integer/1], result: &is_integer/1}
+      contract2 = %Spec.Contract{args: [&is_integer/1], result: 0..255}
+      assert Spec.Contract.compatible?(contract1, contract2)
+    end
+  end
 end
