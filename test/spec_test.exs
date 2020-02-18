@@ -63,3 +63,18 @@ defmodule SpecTest do
     end
   end
 end
+
+defmodule Spec.ContractTest do
+  use ExUnit.Case, async: true
+  require Spec.Contract
+
+  def rgb2hex(r, g, b) do
+    hex = (256 * 256 * r + 256 * g + b) |> Integer.to_string(16) |> String.pad_leading(6, "0")
+    "#" <> hex
+  end
+
+  test "conform/2" do
+    contract = %Spec.Contract{args: [0..255, 0..255, 0..255], result: &is_binary/1}
+    assert Spec.Contract.conform!({__MODULE__, :rgb2hex, [1, 2, 255]}, contract) == "#0102FF"
+  end
+end

@@ -101,7 +101,7 @@ defmodule Spec.Compatibility do
   end
 
   def compatibility(%Range{}, fun) when is_function(fun, 1) do
-    if fun == &is_integer/1 do
+    if fun == (&is_integer/1) do
       :looser
     else
       :incompatible
@@ -109,7 +109,7 @@ defmodule Spec.Compatibility do
   end
 
   def compatibility(fun, %Range{}) when is_function(fun, 1) do
-    if fun == &is_integer/1 do
+    if fun == (&is_integer/1) do
       :stricter
     else
       :incompatible
@@ -123,6 +123,32 @@ defmodule Spec.Compatibility do
         :stricter -> {:cont, :stricter}
         :equal -> {:cont, :equal}
         :incompatible -> {:cont, acc}
+      end
+    end)
+  end
+end
+
+defmodule Spec.Contract do
+  defstruct [:args, :result]
+
+  def conform({mod, fun, args}, contract) do
+    with :ok <- conform_args(args, contract) do
+      Spec.conform(apply(mod, fun, args), contract.result)
+    end
+  end
+
+  def conform!(mfargs, contract) do
+    case conform(mfargs, contract) do
+      {:ok, value} -> value
+      {:error, exception} -> raise exception
+    end
+  end
+
+  defp conform_args(args, contract) do
+    Enum.reduce_while(Enum.zip(args, contract.args), :ok, fn {value, spec}, _ ->
+      case Spec.conform(value, spec) do
+        {:ok, _} -> {:cont, :ok}
+        {:error, _} = error -> {:halt, error}
       end
     end)
   end
